@@ -176,18 +176,34 @@ async function populateCameras() {
   const devices = await scanner.listCameras();
   elements.cameraSelect.innerHTML = '';
 
-  devices.forEach((device, index) => {
+  const usableDevices = devices.filter((device) => device.deviceId);
+  if (!usableDevices.length) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'Rückkamera (Standard)';
+    elements.cameraSelect.appendChild(option);
+    return;
+  }
+
+  usableDevices.forEach((device, index) => {
     const option = document.createElement('option');
     option.value = device.deviceId;
     option.textContent = device.label || `Kamera ${index + 1}`;
     elements.cameraSelect.appendChild(option);
   });
+
+  if (scanner.currentDeviceId) {
+    elements.cameraSelect.value = scanner.currentDeviceId;
+  }
 }
 
 async function startCamera() {
   try {
-    await scanner.start(elements.cameraSelect.value || null);
-    setStatus('Kamera aktiv — QR-Sequenz scannen.', 'info');
+    setStatus('Kamera wird gestartet...', 'info');
+    const selectedDeviceId = elements.cameraSelect.value || null;
+    await scanner.start(selectedDeviceId);
+    await populateCameras();
+    setStatus('Kamera aktiv — QR-Sequenz scannen.', 'success');
   } catch (error) {
     setStatus(error.message || 'Kamera konnte nicht gestartet werden.', 'error');
   }
@@ -241,11 +257,12 @@ async function init() {
   renderChunkMatrix();
   updateActionButtons();
 
-  try {
-    await populateCameras();
-  } catch (error) {
-    setStatus(error.message || 'Kameras konnten nicht geladen werden.', 'error');
-  }
+  const option = document.createElement('option');
+  option.value = '';
+  option.textContent = 'Rückkamera (Standard)';
+  elements.cameraSelect.appendChild(option);
+
+  setStatus('Tippe „Kamera starten“, um den Kamera-Zugriff zu erlauben.', 'info');
 }
 
 init();
