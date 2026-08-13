@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QrSource v1.0.4 — CSV Sender</title>
+  <title>QrSource v1.0.5 — CSV Sender</title>
   <link rel="stylesheet" href="../shared/app-header.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="app-header">
     <a class="back-link" href="../index.html">← Startseite</a>
-    <h1>QrSource<span class="app-version">v1.0.4</span></h1>
+    <h1>QrSource<span class="app-version">v1.0.5</span></h1>
     <p class="subtitle">CSV-Datei als verschlüsselte QR-Sequenz übertragen</p>
   </header>
 
   <main class="layout">
     <section class="panel controls-panel">
-      <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="CSV-Datei auswählen">
-        <p>CSV-Datei hier ablegen oder klicken</p>
+      <label id="drop-zone" class="drop-zone" for="file-input">
+        <span>CSV-Datei hier ablegen oder klicken</span>
         <input id="file-input" type="file" accept=".csv,text/csv" hidden>
-      </div>
+      </label>
 
       <p id="file-info" class="file-info">Keine Datei ausgewählt</p>
 

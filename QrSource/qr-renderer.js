@@ -1,6 +1,14 @@
-import QRCode from 'https://esm.sh/qrcode@1.5.4';
 import { QR_CANVAS_SIZE, QR_ERROR_CORRECTION, QR_MARGIN } from '../shared/constants.js';
 import { serializeChunkHeader } from '../shared/chunk-protocol.js';
+
+let qrcodeModule = null;
+
+async function loadQrCode() {
+  if (!qrcodeModule) {
+    qrcodeModule = await import('https://esm.sh/qrcode@1.5.4');
+  }
+  return qrcodeModule.default;
+}
 
 /**
  * Pre-renders all chunk QR codes to canvas elements.
@@ -8,6 +16,7 @@ import { serializeChunkHeader } from '../shared/chunk-protocol.js';
  * @returns {Promise<HTMLCanvasElement[]>}
  */
 export async function preRenderQrCodes(headers) {
+  const QRCode = await loadQrCode();
   const canvases = [];
 
   for (const header of headers) {

@@ -113,7 +113,7 @@ async function finalizeTransfer() {
     setStatus('Setze Chunks zusammen und entschlüssele...', 'info');
     const encrypted = reassembleChunks(state.chunks, state.total, state.totalCrc);
     const compressed = await decrypt(encrypted, password);
-    state.csvText = decompressText(compressed);
+    state.csvText = await decompressText(compressed);
 
     setStatus(`Transfer abgeschlossen (${state.total} Chunks).`, 'success');
     updateActionButtons();

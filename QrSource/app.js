@@ -2,7 +2,6 @@ import { compressText } from '../shared/compression.js';
 import { encrypt, sha256Hex } from '../shared/crypto.js';
 import { splitIntoChunks } from '../shared/chunk-protocol.js';
 import { DEFAULT_INTERVAL_MS } from '../shared/constants.js';
-import { drawQrToDisplay, preRenderQrCodes } from './qr-renderer.js';
 
 const state = {
   headers: [],
@@ -115,19 +114,62 @@ function startPlayback() {
   state.timerId = window.setInterval(advanceFrame, state.intervalMs);
 }
 
+/**
+ * Checks whether a file looks like CSV by extension or MIME type.
+ * @param {File} file
+ * @returns {boolean}
+ */
+function isCsvFile(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.csv')) {
+    return true;
+  }
+
+  const mime = (file.type || '').toLowerCase();
+  return mime.includes('csv') || mime === 'text/plain' || mime === 'application/vnd.ms-excel';
+}
+
+/**
+ * Resolves a dropped or selected file from drag event or input.
+ * @param {DragEvent | null} event
+ * @returns {File | null}
+ */
+function getFileFromDropEvent(event) {
+  const dataTransfer = event?.dataTransfer;
+  if (!dataTransfer) {
+    return null;
+  }
+
+  if (dataTransfer.files?.length) {
+    return dataTransfer.files[0];
+  }
+
+  const item = dataTransfer.items?.[0];
+  if (item?.kind === 'file') {
+    return item.getAsFile();
+  }
+
+  return null;
+}
+
 async function processCsvFile(file) {
   setError('');
   stopTimer();
   state.currentIndex = 0;
 
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    setError('Bitte eine CSV-Datei auswählen.');
+  if (!file) {
+    setError('Keine Datei erkannt.');
+    return;
+  }
+
+  if (!isCsvFile(file)) {
+    setError('Bitte eine CSV-Datei auswählen (.csv).');
     return;
   }
 
   const password = elements.passwordInput.value;
   if (!password) {
-    setError('Bitte ein Passwort eingeben.');
+    setError('Bitte zuerst ein Passwort eingeben.');
     return;
   }
 
@@ -135,8 +177,12 @@ async function processCsvFile(file) {
   elements.fileInfo.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
 
   try {
+    const { preRenderQrCodes, drawQrToDisplay: drawQr } = await import('./qr-renderer.js');
+    // Keep draw helper available for playback methods.
+    drawQrToDisplay = drawQr;
+
     const csvText = await file.text();
-    const compressed = compressText(csvText);
+    const compressed = await compressText(csvText);
     const encrypted = await encrypt(compressed, password);
     const fileId = await sha256Hex(encrypted);
     const { headers } = splitIntoChunks(encrypted, fileId);
@@ -158,34 +204,43 @@ async function processCsvFile(file) {
   }
 }
 
+let drawQrToDisplay = (displayCanvas, sourceCanvas) => {
+  const context = displayCanvas.getContext('2d');
+  context.imageSmoothingEnabled = false;
+  context.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+  context.drawImage(sourceCanvas, 0, 0, displayCanvas.width, displayCanvas.height);
+};
+
 function bindFileHandlers() {
   elements.fileInput.addEventListener('change', (event) => {
     const file = event.target.files?.[0];
     if (file) {
       processCsvFile(file);
     }
+    event.target.value = '';
   });
 
-  elements.dropZone.addEventListener('dragover', (event) => {
+  ['dragenter', 'dragover'].forEach((eventName) => {
+    elements.dropZone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      elements.dropZone.classList.add('drag-over');
+    });
+  });
+
+  elements.dropZone.addEventListener('dragleave', (event) => {
     event.preventDefault();
-    elements.dropZone.classList.add('drag-over');
-  });
-
-  elements.dropZone.addEventListener('dragleave', () => {
-    elements.dropZone.classList.remove('drag-over');
+    event.stopPropagation();
+    if (!elements.dropZone.contains(event.relatedTarget)) {
+      elements.dropZone.classList.remove('drag-over');
+    }
   });
 
   elements.dropZone.addEventListener('drop', (event) => {
     event.preventDefault();
+    event.stopPropagation();
     elements.dropZone.classList.remove('drag-over');
-    const file = event.dataTransfer?.files?.[0];
-    if (file) {
-      processCsvFile(file);
-    }
-  });
-
-  elements.dropZone.addEventListener('click', () => {
-    elements.fileInput.click();
+    processCsvFile(getFileFromDropEvent(event));
   });
 }
 
@@ -231,6 +286,11 @@ function bindControls() {
 }
 
 function init() {
+  if (!elements.dropZone || !elements.fileInput) {
+    setError('Upload-Bereich konnte nicht initialisiert werden.');
+    return;
+  }
+
   elements.intervalLabel.textContent = `${state.intervalMs} ms`;
   elements.loopToggle.checked = state.loopEnabled;
   bindFileHandlers();
