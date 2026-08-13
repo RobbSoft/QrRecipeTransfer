@@ -53,13 +53,13 @@ Jeder QR-Code enthält einen JSON-Header:
 
 ```json
 {
-  "v": 1,
-  "fileId": "<sha256>",
-  "seq": 1,
-  "total": 40,
-  "totalCrc": 123456789,
-  "chunkCrc": 987654321,
-  "payload": "<base64 chunk bytes>"
+  "v": 2,
+  "f": "<16-char session id>",
+  "s": 1,
+  "n": 52,
+  "tc": 123456789,
+  "c": 987654321,
+  "p": "<base64 chunk bytes>"
 }
 ```
 
@@ -67,7 +67,7 @@ Pipeline:
 
 1. CSV → gzip (pako)
 2. AES-GCM Verschlüsselung (Web Crypto API, PBKDF2)
-3. Chunking (1.200 Bytes pro Chunk)
+3. Chunking (200 Bytes pro Chunk, kompaktes JSON v2)
 4. QR-Sequenz mit CRC32-Validierung pro Chunk und gesamt
 
 ## Google Sheets Setup

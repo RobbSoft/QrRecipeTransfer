@@ -31,6 +31,56 @@ export function base64ToBytes(base64) {
 }
 
 /**
+ * Normalizes v1 (verbose) and v2 (compact) chunk headers to a common shape.
+ * @param {object} raw
+ * @returns {object}
+ */
+export function normalizeHeader(raw) {
+  if (raw.v === 1) {
+    return {
+      v: 1,
+      fileId: raw.fileId,
+      seq: raw.seq,
+      total: raw.total,
+      totalCrc: raw.totalCrc,
+      chunkCrc: raw.chunkCrc,
+      payload: raw.payload,
+    };
+  }
+
+  if (raw.v === 2) {
+    return {
+      v: 2,
+      fileId: raw.f,
+      seq: raw.s,
+      total: raw.n,
+      totalCrc: raw.tc,
+      chunkCrc: raw.c,
+      payload: raw.p,
+    };
+  }
+
+  throw new Error(`Unsupported protocol version: ${raw.v}`);
+}
+
+/**
+ * Builds a compact v2 chunk record for QR encoding.
+ * @param {object} params
+ * @returns {object}
+ */
+function buildChunkRecord({ fileId, seq, total, totalCrc, chunkCrc, payload }) {
+  return {
+    v: PROTOCOL_VERSION,
+    f: fileId,
+    s: seq,
+    n: total,
+    tc: totalCrc,
+    c: chunkCrc,
+    p: payload,
+  };
+}
+
+/**
  * Splits encrypted bytes into fixed-size chunks with metadata headers.
  * @param {Uint8Array} encryptedData
  * @param {string} fileId
@@ -47,15 +97,14 @@ export function splitIntoChunks(encryptedData, fileId) {
     const chunkBytes = encryptedData.slice(start, end);
     const chunkCrc = crc32(chunkBytes);
 
-    headers.push({
-      v: PROTOCOL_VERSION,
+    headers.push(buildChunkRecord({
       fileId,
       seq: index + 1,
       total,
       totalCrc,
       chunkCrc,
       payload: bytesToBase64(chunkBytes),
-    });
+    }));
   }
 
   return { headers, totalCrc };
@@ -76,13 +125,14 @@ export function serializeChunkHeader(header) {
  * @returns {{ header: object, chunkBytes: Uint8Array }}
  */
 export function parseChunkPayload(rawText) {
-  let header;
+  let raw;
   try {
-    header = JSON.parse(rawText);
+    raw = JSON.parse(rawText);
   } catch {
     throw new Error('Invalid QR payload: not valid JSON.');
   }
 
+  const header = normalizeHeader(raw);
   validateChunkHeader(header);
 
   const chunkBytes = base64ToBytes(header.payload);
@@ -109,7 +159,7 @@ export function validateChunkHeader(header) {
     }
   }
 
-  if (header.v !== PROTOCOL_VERSION) {
+  if (header.v !== 1 && header.v !== 2) {
     throw new Error(`Unsupported protocol version: ${header.v}`);
   }
 
@@ -157,4 +207,13 @@ export function reassembleChunks(chunksBySeq, total, expectedTotalCrc) {
   }
 
   return combined;
+}
+
+/**
+ * Creates a short session id from a SHA-256 hex digest.
+ * @param {string} sha256HexDigest
+ * @returns {string}
+ */
+export function shortFileId(sha256HexDigest) {
+  return sha256HexDigest.slice(0, 16);
 }

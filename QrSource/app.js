@@ -1,6 +1,6 @@
 import { compressText } from '../shared/compression.js';
 import { encrypt, sha256Hex } from '../shared/crypto.js';
-import { splitIntoChunks } from '../shared/chunk-protocol.js';
+import { splitIntoChunks, shortFileId } from '../shared/chunk-protocol.js';
 import { DEFAULT_INTERVAL_MS } from '../shared/constants.js';
 
 const state = {
@@ -184,7 +184,7 @@ async function processCsvFile(file) {
     const csvText = await file.text();
     const compressed = await compressText(csvText);
     const encrypted = await encrypt(compressed, password);
-    const fileId = await sha256Hex(encrypted);
+    const fileId = shortFileId(await sha256Hex(encrypted));
     const { headers } = splitIntoChunks(encrypted, fileId);
 
     state.headers = headers;

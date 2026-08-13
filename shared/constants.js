@@ -1,6 +1,7 @@
-export const PROTOCOL_VERSION = 1;
-export const APP_VERSION = '1.0.6';
-export const CHUNK_SIZE = 800;
+export const PROTOCOL_VERSION = 2;
+export const APP_VERSION = '1.0.7';
+export const CHUNK_SIZE = 200;
+export const FILE_ID_LENGTH = 16;
 export const SALT_LENGTH = 16;
 export const IV_LENGTH = 12;
 export const PBKDF2_ITERATIONS = 100000;
