@@ -39,14 +39,6 @@ body {
   color: var(--muted);
 }
 
-.app-version {
-  font-size: 0.55em;
-  font-weight: 500;
-  color: var(--muted);
-  vertical-align: middle;
-  margin-left: 0.15em;
-}
-
 .layout {
   display: grid;
   grid-template-columns: 1fr minmax(280px, 420px);
