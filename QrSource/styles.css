@@ -40,10 +40,11 @@ body {
 }
 
 .app-version {
-  font-size: 0.45em;
-  font-weight: 400;
+  font-size: 0.55em;
+  font-weight: 500;
   color: var(--muted);
   vertical-align: middle;
+  margin-left: 0.15em;
 }
 
 .layout {
