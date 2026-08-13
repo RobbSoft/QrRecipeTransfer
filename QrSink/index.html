@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QrSink — CSV Empfänger</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="back-link" href="../index.html">← Startseite</a>
+    <h1>QrSink</h1>
+    <p class="subtitle">QR-Sequenz scannen, entschlüsseln und in Google Sheets schreiben</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel camera-panel">
+      <video id="video-preview" autoplay muted playsinline></video>
+
+      <div class="camera-controls">
+        <select id="camera-select" aria-label="Kamera auswählen"></select>
+        <button id="btn-start-camera" type="button">Kamera starten</button>
+        <button id="btn-flip-camera" type="button">Kamera wechseln</button>
+      </div>
+
+      <label class="field">
+        <span>Passwort</span>
+        <input id="password" type="password" autocomplete="off" placeholder="Entschlüsselungspasswort">
+      </label>
+
+      <div id="status-box" class="status-box" data-type="info">Bereit.</div>
+    </section>
+
+    <section class="panel side-panel">
+      <h2>Chunk-Fortschritt</h2>
+      <div id="chunk-matrix" class="chunk-matrix"></div>
+
+      <h2>Google Sheets</h2>
+      <label class="field">
+        <span>Web-App-URL</span>
+        <input id="web-app-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+      </label>
+
+      <label class="field">
+        <span>Spreadsheet-ID</span>
+        <input id="spreadsheet-id" type="text" placeholder="Spreadsheet ID">
+      </label>
+
+      <label class="field">
+        <span>Sheet-Name</span>
+        <input id="sheet-name" type="text" value="Sheet1">
+      </label>
+
+      <label class="field">
+        <span>Shared Secret (optional)</span>
+        <input id="shared-secret" type="password" autocomplete="off" placeholder="Optional">
+      </label>
+
+      <div class="button-row">
+        <button id="btn-upload-sheet" type="button" disabled>In Google Sheet eintragen</button>
+        <button id="btn-download-csv" type="button" disabled>Als CSV herunterladen</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
