@@ -40,7 +40,7 @@ const elements = {
   downloadBtn: document.getElementById('btn-download-csv'),
 };
 
-const scanner = new QrScanner(elements.video, handleScan);
+const scanner = new QrScanner(elements.video, handleScan, handleScanActivity);
 
 function setStatus(message, type = 'info') {
   elements.statusBox.textContent = message;
@@ -124,6 +124,17 @@ async function finalizeTransfer() {
   }
 }
 
+function handleScanActivity(event) {
+  if (event.type === 'engine_ready') {
+    setStatus(`Kamera aktiv (${event.engine}) — QR-Sequenz scannen.`, 'success');
+    return;
+  }
+
+  if (event.type === 'qr_detected' && !state.total) {
+    setStatus('QR-Code erkannt — prüfe Chunk-Daten...', 'info');
+  }
+}
+
 function handleScan(rawText) {
   try {
     const { header, chunkBytes } = parseChunkPayload(rawText);
@@ -168,7 +179,10 @@ function handleScan(rawText) {
       return;
     }
 
-    // Ignore unrelated QR codes in the camera view.
+    // Ignore unrelated QR codes, but give brief feedback for almost-matching payloads.
+    if (rawText.startsWith('{')) {
+      setStatus('QR erkannt, aber kein gültiger QrSource-Chunk.', 'error');
+    }
   }
 }
 
@@ -203,7 +217,6 @@ async function startCamera() {
     const selectedDeviceId = elements.cameraSelect.value || null;
     await scanner.start(selectedDeviceId);
     await populateCameras();
-    setStatus('Kamera aktiv — QR-Sequenz scannen.', 'success');
   } catch (error) {
     setStatus(error.message || 'Kamera konnte nicht gestartet werden.', 'error');
   }

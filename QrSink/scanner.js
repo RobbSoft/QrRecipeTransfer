@@ -1,5 +1,3 @@
-import { BrowserMultiFormatReader } from 'https://esm.sh/@zxing/library@0.21.3';
-
 /**
  * Maps getUserMedia errors to user-friendly German messages.
  * @param {Error} error
@@ -38,7 +36,6 @@ async function ensureVideoPlayback(videoElement) {
     try {
       await videoElement.play();
     } catch {
-      // Retry once after metadata is ready (common on iOS).
       await new Promise((resolve) => {
         videoElement.addEventListener('loadedmetadata', resolve, { once: true });
       });
@@ -48,26 +45,42 @@ async function ensureVideoPlayback(videoElement) {
 }
 
 /**
- * Wrapper around ZXing for continuous QR scanning from camera.
- * Optimized for iOS Safari (facingMode fallback, explicit video.play).
+ * Continuous QR scanner using native BarcodeDetector or jsQR fallback.
+ * Optimized for scanning QR sequences from a screen via iPhone camera.
  */
 export class QrScanner {
   /**
    * @param {HTMLVideoElement} videoElement
    * @param {(text: string) => void} onScan
+   * @param {(event: { type: string, engine?: string }) => void} [onActivity]
    */
-  constructor(videoElement, onScan) {
+  constructor(videoElement, onScan, onActivity = null) {
     this.videoElement = videoElement;
     this.onScan = onScan;
-    this.reader = new BrowserMultiFormatReader();
+    this.onActivity = onActivity;
     this.devices = [];
     this.currentDeviceId = null;
     this.currentFacingMode = 'environment';
     this.isScanning = false;
-    this.scanControls = null;
+    this.stream = null;
+    this.animationFrameId = null;
     this.lastScannedText = '';
     this.lastScanTime = 0;
-    this.debounceMs = 150;
+    this.lastFrameScanTime = 0;
+    this.debounceMs = 200;
+    this.frameIntervalMs = 80;
+    this.engine = 'none';
+    this.detector = null;
+    this.jsQR = null;
+    this.scanCanvas = document.createElement('canvas');
+    this.scanContext = this.scanCanvas.getContext('2d', { willReadFrequently: true });
+  }
+
+  /**
+   * @returns {string}
+   */
+  getEngineName() {
+    return this.engine;
   }
 
   /**
@@ -106,6 +119,25 @@ export class QrScanner {
   }
 
   /**
+   * Initializes the best available QR decoding engine.
+   */
+  async initEngine() {
+    if ('BarcodeDetector' in globalThis) {
+      try {
+        this.detector = new BarcodeDetector({ formats: ['qr_code'] });
+        this.engine = 'BarcodeDetector';
+        return;
+      } catch {
+        this.detector = null;
+      }
+    }
+
+    const jsQRModule = await import('https://esm.sh/jsqr@1.4.0');
+    this.jsQR = jsQRModule.default;
+    this.engine = 'jsQR';
+  }
+
+  /**
    * Starts scanning with the selected or default camera.
    * @param {string | null} deviceId
    */
@@ -115,37 +147,17 @@ export class QrScanner {
     }
 
     await this.stop();
+    await this.initEngine();
 
     const constraints = this.buildConstraints(deviceId);
 
     try {
-      this.isScanning = true;
-
-      this.scanControls = await this.reader.decodeFromConstraints(
-        constraints,
-        this.videoElement,
-        (result, error) => {
-          if (result) {
-            const text = result.getText();
-            const now = Date.now();
-            if (text === this.lastScannedText && now - this.lastScanTime < this.debounceMs) {
-              return;
-            }
-            this.lastScannedText = text;
-            this.lastScanTime = now;
-            this.onScan(text);
-          }
-
-          if (error && error.name !== 'NotFoundException') {
-            // Ignore "no QR in frame" errors during continuous scanning.
-          }
-        }
-      );
-
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.videoElement.srcObject = this.stream;
       await ensureVideoPlayback(this.videoElement);
       await this.listCameras();
 
-      const track = this.videoElement.srcObject?.getVideoTracks?.()[0];
+      const track = this.stream.getVideoTracks()[0];
       if (track) {
         const settings = track.getSettings();
         if (settings.deviceId) {
@@ -157,10 +169,102 @@ export class QrScanner {
       } else if (deviceId) {
         this.currentDeviceId = deviceId;
       }
+
+      this.isScanning = true;
+      this.onActivity?.({ type: 'engine_ready', engine: this.engine });
+      this.scanLoop();
     } catch (error) {
       this.isScanning = false;
       throw new Error(formatCameraError(error));
     }
+  }
+
+  /**
+   * Runs the continuous scan loop.
+   */
+  scanLoop() {
+    if (!this.isScanning) {
+      return;
+    }
+
+    this.animationFrameId = requestAnimationFrame(() => {
+      this.processFrame();
+      this.scanLoop();
+    });
+  }
+
+  /**
+   * Processes one video frame for QR codes.
+   */
+  async processFrame() {
+    const now = Date.now();
+    if (now - this.lastFrameScanTime < this.frameIntervalMs) {
+      return;
+    }
+    this.lastFrameScanTime = now;
+
+    const video = this.videoElement;
+    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+      return;
+    }
+
+    let text = null;
+
+    try {
+      if (this.detector) {
+        const barcodes = await this.detector.detect(video);
+        if (barcodes.length > 0) {
+          text = barcodes[0].rawValue;
+        }
+      } else if (this.jsQR) {
+        text = this.scanWithJsQR(video);
+      }
+    } catch {
+      // Skip frame on transient decode errors.
+    }
+
+    if (!text) {
+      return;
+    }
+
+    this.onActivity?.({ type: 'qr_detected', engine: this.engine });
+
+    if (text === this.lastScannedText && now - this.lastScanTime < this.debounceMs) {
+      return;
+    }
+
+    this.lastScannedText = text;
+    this.lastScanTime = now;
+    this.onScan(text);
+  }
+
+  /**
+   * Decodes a QR code from a video frame using jsQR.
+   * @param {HTMLVideoElement} video
+   * @returns {string | null}
+   */
+  scanWithJsQR(video) {
+    const sourceWidth = video.videoWidth;
+    const sourceHeight = video.videoHeight;
+    if (!sourceWidth || !sourceHeight) {
+      return null;
+    }
+
+    const maxWidth = 720;
+    const scale = Math.min(1, maxWidth / sourceWidth);
+    const width = Math.max(1, Math.floor(sourceWidth * scale));
+    const height = Math.max(1, Math.floor(sourceHeight * scale));
+
+    this.scanCanvas.width = width;
+    this.scanCanvas.height = height;
+    this.scanContext.drawImage(video, 0, 0, width, height);
+
+    const imageData = this.scanContext.getImageData(0, 0, width, height);
+    const result = this.jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: 'attemptBoth',
+    });
+
+    return result?.data || null;
   }
 
   /**
@@ -169,18 +273,20 @@ export class QrScanner {
   async stop() {
     this.isScanning = false;
 
-    if (this.scanControls?.stop) {
-      this.scanControls.stop();
-      this.scanControls = null;
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
 
-    this.reader.reset();
-
-    const stream = this.videoElement.srcObject;
-    if (stream instanceof MediaStream) {
-      stream.getTracks().forEach((track) => track.stop());
+    if (this.stream) {
+      this.stream.getTracks().forEach((track) => track.stop());
+      this.stream = null;
     }
+
     this.videoElement.srcObject = null;
+    this.detector = null;
+    this.jsQR = null;
+    this.engine = 'none';
   }
 
   /**
@@ -197,7 +303,6 @@ export class QrScanner {
       return;
     }
 
-    // iOS often hides device IDs until after permission — toggle facingMode instead.
     this.currentFacingMode = this.currentFacingMode === 'environment' ? 'user' : 'environment';
     await this.start(null);
   }
