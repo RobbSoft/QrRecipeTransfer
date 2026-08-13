@@ -1,7 +1,7 @@
 import { compressText } from '../shared/compression.js';
 import { encrypt, sha256Hex } from '../shared/crypto.js';
 import { splitIntoChunks } from '../shared/chunk-protocol.js';
-import { DEFAULT_INTERVAL_MS } from '../shared/constants.js';
+import { DEFAULT_INTERVAL_MS, APP_VERSION } from '../shared/constants.js';
 import { drawQrToDisplay, preRenderQrCodes } from './qr-renderer.js';
 
 const state = {
@@ -231,6 +231,7 @@ function bindControls() {
 }
 
 function init() {
+  document.getElementById('app-version').textContent = `v${APP_VERSION}`;
   elements.intervalLabel.textContent = `${state.intervalMs} ms`;
   elements.loopToggle.checked = state.loopEnabled;
   bindFileHandlers();

@@ -4,6 +4,7 @@ import {
   parseChunkPayload,
   reassembleChunks,
 } from '../shared/chunk-protocol.js';
+import { APP_VERSION } from '../shared/constants.js';
 import { QrScanner } from './scanner.js';
 import { downloadCsv, parseCsv, sendToGoogleSheet } from './sheets-client.js';
 
@@ -252,6 +253,7 @@ function bindEvents() {
 }
 
 async function init() {
+  document.getElementById('app-version').textContent = `v${APP_VERSION}`;
   loadSettings();
   bindEvents();
   renderChunkMatrix();
