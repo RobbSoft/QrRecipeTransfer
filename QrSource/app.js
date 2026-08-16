@@ -1,7 +1,8 @@
 import { compressText } from '../shared/compression.js';
 import { encrypt, sha256Hex } from '../shared/crypto.js';
 import { splitIntoChunks, shortFileId } from '../shared/chunk-protocol.js';
-import { DEFAULT_INTERVAL_MS, DEFAULT_ENCRYPTION_PASSWORD, DEFAULT_TEST_CSV_PATH } from '../shared/constants.js';
+import { DEFAULT_INTERVAL_MS, DEFAULT_ENCRYPTION_PASSWORD } from '../shared/constants.js';
+import { DEFAULT_TEST_CSV_NAME, DEFAULT_TEST_CSV_TEXT } from './default-test-csv.js';
 
 const state = {
   headers: [],
@@ -287,19 +288,14 @@ function bindControls() {
 
 async function loadDefaultTestCsv() {
   setStatus('Lade Test-CSV...');
+  elements.fileInfo.textContent = 'Lade Test-CSV...';
 
   try {
-    const response = await fetch(DEFAULT_TEST_CSV_PATH);
-    if (!response.ok) {
-      throw new Error(`Test-CSV konnte nicht geladen werden (${response.status}).`);
-    }
-
-    const csvText = await response.text();
-    const fileName = DEFAULT_TEST_CSV_PATH.split('/').pop() || 'test.csv';
-    const file = new File([csvText], fileName, { type: 'text/csv' });
+    const file = new File([DEFAULT_TEST_CSV_TEXT], DEFAULT_TEST_CSV_NAME, { type: 'text/csv' });
     await processCsvFile(file);
   } catch (error) {
     setError(error.message || 'Test-CSV konnte nicht geladen werden.');
+    elements.fileInfo.textContent = 'Keine Datei ausgewählt';
     updateProgress();
     updateControls();
   }
