@@ -1,7 +1,7 @@
 import { compressText } from '../shared/compression.js';
 import { encrypt, sha256Hex } from '../shared/crypto.js';
 import { splitIntoChunks, shortFileId } from '../shared/chunk-protocol.js';
-import { DEFAULT_INTERVAL_MS } from '../shared/constants.js';
+import { DEFAULT_INTERVAL_MS, DEFAULT_ENCRYPTION_PASSWORD } from '../shared/constants.js';
 
 const state = {
   headers: [],
@@ -167,7 +167,7 @@ async function processCsvFile(file) {
     return;
   }
 
-  const password = elements.passwordInput.value;
+  const password = elements.passwordInput.value || DEFAULT_ENCRYPTION_PASSWORD;
   if (!password) {
     setError('Bitte zuerst ein Passwort eingeben.');
     return;
@@ -291,6 +291,7 @@ function init() {
     return;
   }
 
+  elements.passwordInput.value = DEFAULT_ENCRYPTION_PASSWORD;
   elements.intervalLabel.textContent = `${state.intervalMs} ms`;
   elements.loopToggle.checked = state.loopEnabled;
   bindFileHandlers();

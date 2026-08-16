@@ -43,9 +43,9 @@ Dann öffnen:
 ## Workflow
 
 1. CSV-Datei in **QrSource** laden
-2. Passwort setzen und QR-Sequenz starten
+2. QR-Sequenz starten (Standardpasswort `QrRecipeTransfer` ist vorausgefüllt)
 3. **QrSink** auf dem Smartphone öffnen, Kamera starten und scannen
-4. Nach vollständigem Empfang: Passwort eingeben und Daten exportieren
+4. Nach vollständigem Empfang: Daten exportieren (gleiches Standardpasswort)
 
 ## Protokoll
 
@@ -87,9 +87,10 @@ In der Sheet-URL:
 
 ## Sicherheit
 
-- Die QR-Daten sind passwortgeschützt (AES-GCM)
+- Die QR-Daten sind mit AES-GCM verschlüsselt
+- QrSource und QrSink nutzen standardmäßig das Passwort `QrRecipeTransfer` (änderbar im Passwort-Feld)
 - Die Google Apps Script Web-App ist öffentlich erreichbar — nutze optional ein Shared Secret
-- Für hochsensible Daten zusätzliche Schutzmaßnahmen erwägen
+- Für hochsensible Daten ein eigenes starkes Passwort setzen und zusätzliche Schutzmaßnahmen erwägen
 
 ## GitHub Pages Deployment
 

@@ -4,6 +4,7 @@ import {
   parseChunkPayload,
   reassembleChunks,
 } from '../shared/chunk-protocol.js';
+import { DEFAULT_ENCRYPTION_PASSWORD } from '../shared/constants.js';
 import { QrScanner } from './scanner.js';
 import { downloadCsv, parseCsv, sendToGoogleSheet } from './sheets-client.js';
 
@@ -104,7 +105,7 @@ function updateActionButtons() {
 
 async function finalizeTransfer() {
   try {
-    const password = elements.passwordInput.value;
+    const password = elements.passwordInput.value || DEFAULT_ENCRYPTION_PASSWORD;
     if (!password) {
       setStatus('Bitte Passwort eingeben.', 'error');
       return;
@@ -266,6 +267,7 @@ function bindEvents() {
 
 async function init() {
   loadSettings();
+  elements.passwordInput.value = DEFAULT_ENCRYPTION_PASSWORD;
   bindEvents();
   renderChunkMatrix();
   updateActionButtons();
