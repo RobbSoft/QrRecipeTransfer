@@ -1,10 +1,16 @@
 export const PROTOCOL_VERSION = 2;
-export const APP_VERSION = '1.0.7';
+export const APP_VERSION = '1.0.8';
 export const CHUNK_SIZE = 200;
 export const FILE_ID_LENGTH = 16;
 export const SALT_LENGTH = 16;
 export const IV_LENGTH = 12;
 export const PBKDF2_ITERATIONS = 100000;
+
+/** Pre-filled AES-GCM password used by QrSource and QrSink. */
+export const DEFAULT_ENCRYPTION_PASSWORD = 'QrRecipeTransfer';
+
+/** Relative path to the demo CSV loaded automatically by QrSource. */
+export const DEFAULT_TEST_CSV_PATH = '../test-data/test-10kb.csv';
 
 export const QR_ERROR_CORRECTION = 'L';
 export const QR_MARGIN = 4;
