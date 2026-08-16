@@ -1,7 +1,7 @@
 import { compressText } from '../shared/compression.js';
 import { encrypt, sha256Hex } from '../shared/crypto.js';
 import { splitIntoChunks, shortFileId } from '../shared/chunk-protocol.js';
-import { DEFAULT_INTERVAL_MS, DEFAULT_ENCRYPTION_PASSWORD } from '../shared/constants.js';
+import { DEFAULT_INTERVAL_MS, DEFAULT_ENCRYPTION_PASSWORD, DEFAULT_TEST_CSV_PATH } from '../shared/constants.js';
 
 const state = {
   headers: [],
@@ -285,6 +285,26 @@ function bindControls() {
   });
 }
 
+async function loadDefaultTestCsv() {
+  setStatus('Lade Test-CSV...');
+
+  try {
+    const response = await fetch(DEFAULT_TEST_CSV_PATH);
+    if (!response.ok) {
+      throw new Error(`Test-CSV konnte nicht geladen werden (${response.status}).`);
+    }
+
+    const csvText = await response.text();
+    const fileName = DEFAULT_TEST_CSV_PATH.split('/').pop() || 'test.csv';
+    const file = new File([csvText], fileName, { type: 'text/csv' });
+    await processCsvFile(file);
+  } catch (error) {
+    setError(error.message || 'Test-CSV konnte nicht geladen werden.');
+    updateProgress();
+    updateControls();
+  }
+}
+
 function init() {
   if (!elements.dropZone || !elements.fileInput) {
     setError('Upload-Bereich konnte nicht initialisiert werden.');
@@ -298,6 +318,7 @@ function init() {
   bindControls();
   updateProgress();
   updateControls();
+  loadDefaultTestCsv();
 }
 
 init();
