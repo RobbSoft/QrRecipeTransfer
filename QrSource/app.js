@@ -159,7 +159,7 @@ function getFileFromDropEvent(event) {
   return null;
 }
 
-async function processCsvFile(file) {
+async function processCsvFile(file, { autoStart = false } = {}) {
   setError('');
   stopTimer();
   state.currentIndex = 0;
@@ -202,6 +202,9 @@ async function processCsvFile(file) {
     showCurrentQr();
     updateControls();
     setError('');
+    if (autoStart) {
+      startPlayback();
+    }
   } catch (error) {
     setError(error.message || 'Fehler bei der Verarbeitung.');
     state.headers = [];
@@ -298,7 +301,7 @@ async function loadDefaultTestCsv() {
 
   try {
     const file = new File([DEFAULT_TEST_CSV_TEXT], DEFAULT_TEST_CSV_NAME, { type: 'text/csv' });
-    await processCsvFile(file);
+    await processCsvFile(file, { autoStart: true });
   } catch (error) {
     setError(error.message || 'Test-CSV konnte nicht geladen werden.');
     elements.fileInfo.textContent = 'Keine Datei ausgewählt';
