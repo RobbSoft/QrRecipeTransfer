@@ -1,5 +1,5 @@
 export const PROTOCOL_VERSION = 2;
-export const APP_VERSION = '1.0.12';
+export const APP_VERSION = '1.0.13';
 export const CHUNK_SIZE = 200;
 export const FILE_ID_LENGTH = 16;
 export const SALT_LENGTH = 16;
@@ -13,7 +13,7 @@ export const QR_ERROR_CORRECTION = 'L';
 export const QR_MARGIN = 4;
 export const QR_CANVAS_SIZE = 640;
 
-export const DEFAULT_INTERVAL_MS = 800;
+export const DEFAULT_INTERVAL_MS = 500;
 export const MIN_INTERVAL_MS = 100;
 export const MAX_INTERVAL_MS = 1000;
 export const INTERVAL_STEP_MS = 100;

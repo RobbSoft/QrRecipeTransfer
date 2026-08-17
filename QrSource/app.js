@@ -15,9 +15,7 @@ const state = {
   canvases: [],
   currentIndex: 0,
   intervalMs: DEFAULT_INTERVAL_MS,
-  loopEnabled: true,
   timerId: null,
-  isPlaying: false,
   fileName: '',
 };
 
@@ -27,12 +25,6 @@ const elements = {
   passwordInput: document.getElementById('encryption-key'),
   intervalSlider: document.getElementById('interval-slider'),
   intervalLabel: document.getElementById('interval-label'),
-  startBtn: document.getElementById('btn-start'),
-  pauseBtn: document.getElementById('btn-pause'),
-  prevBtn: document.getElementById('btn-prev'),
-  nextBtn: document.getElementById('btn-next'),
-  resetBtn: document.getElementById('btn-reset'),
-  loopToggle: document.getElementById('loop-toggle'),
   statusText: document.getElementById('status-text'),
   progressBar: document.getElementById('progress-bar'),
   qrCanvas: document.getElementById('qr-canvas'),
@@ -63,15 +55,6 @@ function updateProgress() {
   setStatus(`Chunk ${current} / ${total}`);
 }
 
-function updateControls() {
-  const hasData = state.canvases.length > 0;
-  elements.startBtn.disabled = !hasData || state.isPlaying;
-  elements.pauseBtn.disabled = !state.isPlaying;
-  elements.prevBtn.disabled = !hasData;
-  elements.nextBtn.disabled = !hasData;
-  elements.resetBtn.disabled = !hasData;
-}
-
 function showCurrentQr() {
   if (!state.canvases.length) {
     return;
@@ -81,13 +64,11 @@ function showCurrentQr() {
   updateProgress();
 }
 
-function stopTimer() {
+function stopPlayback() {
   if (state.timerId !== null) {
     clearInterval(state.timerId);
     state.timerId = null;
   }
-  state.isPlaying = false;
-  updateControls();
 }
 
 function advanceFrame() {
@@ -96,17 +77,7 @@ function advanceFrame() {
   }
 
   const lastIndex = state.canvases.length - 1;
-  if (state.currentIndex >= lastIndex) {
-    if (state.loopEnabled) {
-      state.currentIndex = 0;
-    } else {
-      stopTimer();
-      return;
-    }
-  } else {
-    state.currentIndex += 1;
-  }
-
+  state.currentIndex = state.currentIndex >= lastIndex ? 0 : state.currentIndex + 1;
   showCurrentQr();
 }
 
@@ -115,9 +86,7 @@ function startPlayback() {
     return;
   }
 
-  stopTimer();
-  state.isPlaying = true;
-  updateControls();
+  stopPlayback();
   state.timerId = window.setInterval(advanceFrame, state.intervalMs);
 }
 
@@ -159,9 +128,9 @@ function getFileFromDropEvent(event) {
   return null;
 }
 
-async function processCsvFile(file, { autoStart = false } = {}) {
+async function processCsvFile(file) {
   setError('');
-  stopTimer();
+  stopPlayback();
   state.currentIndex = 0;
 
   if (!file) {
@@ -185,7 +154,6 @@ async function processCsvFile(file, { autoStart = false } = {}) {
 
   try {
     const { preRenderQrCodes, drawQrToDisplay: drawQr } = await import('./qr-renderer.js');
-    // Keep draw helper available for playback methods.
     drawQrToDisplay = drawQr;
 
     const csvText = await file.text();
@@ -200,17 +168,13 @@ async function processCsvFile(file, { autoStart = false } = {}) {
 
     state.canvases = await preRenderQrCodes(headers);
     showCurrentQr();
-    updateControls();
     setError('');
-    if (autoStart) {
-      startPlayback();
-    }
+    startPlayback();
   } catch (error) {
     setError(error.message || 'Fehler bei der Verarbeitung.');
     state.headers = [];
     state.canvases = [];
     updateProgress();
-    updateControls();
   }
 }
 
@@ -254,44 +218,13 @@ function bindFileHandlers() {
   });
 }
 
-function bindControls() {
+function bindIntervalSlider() {
   elements.intervalSlider.addEventListener('input', (event) => {
     state.intervalMs = Number(event.target.value);
     elements.intervalLabel.textContent = `${state.intervalMs} ms`;
-    if (state.isPlaying) {
+    if (state.canvases.length) {
       startPlayback();
     }
-  });
-
-  elements.loopToggle.addEventListener('change', (event) => {
-    state.loopEnabled = event.target.checked;
-  });
-
-  elements.startBtn.addEventListener('click', startPlayback);
-  elements.pauseBtn.addEventListener('click', stopTimer);
-
-  elements.prevBtn.addEventListener('click', () => {
-    if (!state.canvases.length) {
-      return;
-    }
-    state.currentIndex = state.currentIndex > 0
-      ? state.currentIndex - 1
-      : state.canvases.length - 1;
-    showCurrentQr();
-  });
-
-  elements.nextBtn.addEventListener('click', () => {
-    if (!state.canvases.length) {
-      return;
-    }
-    state.currentIndex = (state.currentIndex + 1) % state.canvases.length;
-    showCurrentQr();
-  });
-
-  elements.resetBtn.addEventListener('click', () => {
-    stopTimer();
-    state.currentIndex = 0;
-    showCurrentQr();
   });
 }
 
@@ -301,12 +234,11 @@ async function loadDefaultTestCsv() {
 
   try {
     const file = new File([DEFAULT_TEST_CSV_TEXT], DEFAULT_TEST_CSV_NAME, { type: 'text/csv' });
-    await processCsvFile(file, { autoStart: true });
+    await processCsvFile(file);
   } catch (error) {
     setError(error.message || 'Test-CSV konnte nicht geladen werden.');
     elements.fileInfo.textContent = 'Keine Datei ausgewählt';
     updateProgress();
-    updateControls();
   }
 }
 
@@ -322,11 +254,9 @@ function init() {
   elements.intervalSlider.step = String(INTERVAL_STEP_MS);
   elements.intervalSlider.value = String(state.intervalMs);
   elements.intervalLabel.textContent = `${state.intervalMs} ms`;
-  elements.loopToggle.checked = state.loopEnabled;
   bindFileHandlers();
-  bindControls();
+  bindIntervalSlider();
   updateProgress();
-  updateControls();
   loadDefaultTestCsv();
 }
 
