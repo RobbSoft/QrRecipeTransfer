@@ -27,7 +27,7 @@ const state = {
 
 const elements = {
   video: document.getElementById('video-preview'),
-  passwordInput: document.getElementById('password'),
+  passwordInput: document.getElementById('encryption-key'),
   cameraSelect: document.getElementById('camera-select'),
   flipCameraBtn: document.getElementById('btn-flip-camera'),
   startCameraBtn: document.getElementById('btn-start-camera'),
@@ -36,7 +36,7 @@ const elements = {
   webAppUrl: document.getElementById('web-app-url'),
   spreadsheetId: document.getElementById('spreadsheet-id'),
   sheetName: document.getElementById('sheet-name'),
-  secret: document.getElementById('shared-secret'),
+  secret: document.getElementById('sheet-secret'),
   uploadBtn: document.getElementById('btn-upload-sheet'),
   downloadBtn: document.getElementById('btn-download-csv'),
 };

@@ -18,7 +18,7 @@ const state = {
 const elements = {
   dropZone: document.getElementById('drop-zone'),
   fileInput: document.getElementById('file-input'),
-  passwordInput: document.getElementById('password'),
+  passwordInput: document.getElementById('encryption-key'),
   intervalSlider: document.getElementById('interval-slider'),
   intervalLabel: document.getElementById('interval-label'),
   startBtn: document.getElementById('btn-start'),
