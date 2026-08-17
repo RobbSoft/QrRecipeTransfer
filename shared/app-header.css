@@ -16,3 +16,9 @@
   line-height: 1;
   user-select: none;
 }
+
+/* Mask secret values without using type="password" (avoids browser password UI). */
+.masked-secret-input {
+  -webkit-text-security: disc;
+  text-security: disc;
+}

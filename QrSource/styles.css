@@ -82,7 +82,6 @@ body {
   margin: 1rem 0;
 }
 
-.field input[type="password"],
 .field input[type="text"],
 .field input[type="url"] {
   padding: 0.65rem 0.75rem;
