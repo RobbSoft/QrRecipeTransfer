@@ -1,7 +1,13 @@
 import { compressText } from '../shared/compression.js';
 import { encrypt, sha256Hex } from '../shared/crypto.js';
 import { splitIntoChunks, shortFileId } from '../shared/chunk-protocol.js';
-import { DEFAULT_INTERVAL_MS, DEFAULT_ENCRYPTION_PASSWORD } from '../shared/constants.js';
+import {
+  DEFAULT_INTERVAL_MS,
+  DEFAULT_ENCRYPTION_PASSWORD,
+  MIN_INTERVAL_MS,
+  MAX_INTERVAL_MS,
+  INTERVAL_STEP_MS,
+} from '../shared/constants.js';
 import { DEFAULT_TEST_CSV_NAME, DEFAULT_TEST_CSV_TEXT } from './default-test-csv.js';
 
 const state = {
@@ -153,7 +159,7 @@ function getFileFromDropEvent(event) {
   return null;
 }
 
-async function processCsvFile(file) {
+async function processCsvFile(file, { autoStart = false } = {}) {
   setError('');
   stopTimer();
   state.currentIndex = 0;
@@ -196,6 +202,9 @@ async function processCsvFile(file) {
     showCurrentQr();
     updateControls();
     setError('');
+    if (autoStart) {
+      startPlayback();
+    }
   } catch (error) {
     setError(error.message || 'Fehler bei der Verarbeitung.');
     state.headers = [];
@@ -292,7 +301,7 @@ async function loadDefaultTestCsv() {
 
   try {
     const file = new File([DEFAULT_TEST_CSV_TEXT], DEFAULT_TEST_CSV_NAME, { type: 'text/csv' });
-    await processCsvFile(file);
+    await processCsvFile(file, { autoStart: true });
   } catch (error) {
     setError(error.message || 'Test-CSV konnte nicht geladen werden.');
     elements.fileInfo.textContent = 'Keine Datei ausgewählt';
@@ -308,6 +317,10 @@ function init() {
   }
 
   elements.passwordInput.value = DEFAULT_ENCRYPTION_PASSWORD;
+  elements.intervalSlider.min = String(MIN_INTERVAL_MS);
+  elements.intervalSlider.max = String(MAX_INTERVAL_MS);
+  elements.intervalSlider.step = String(INTERVAL_STEP_MS);
+  elements.intervalSlider.value = String(state.intervalMs);
   elements.intervalLabel.textContent = `${state.intervalMs} ms`;
   elements.loopToggle.checked = state.loopEnabled;
   bindFileHandlers();
