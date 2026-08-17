@@ -109,7 +109,9 @@ body {
 
 .qr-status {
   width: min(92vw, 640px);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .qr-status #status-text {
@@ -117,15 +119,16 @@ body {
   font-size: 0.75rem;
   color: var(--muted);
   line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .qr-status .progress-track {
-  width: 100%;
-  height: 4px;
+  flex: 1;
+  height: 8px;
   background: #0b1220;
   border-radius: 999px;
   overflow: hidden;
-  margin-top: 0.35rem;
 }
 
 .progress-bar {
