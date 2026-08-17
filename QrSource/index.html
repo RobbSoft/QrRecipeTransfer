@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QrSource v1.0.13 — CSV Sender</title>
+  <title>QrSource v1.0.14 — CSV Sender</title>
   <link rel="stylesheet" href="../shared/app-header.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="app-header">
     <a class="back-link" href="../index.html">← Startseite</a>
-    <h1>QrSource<span class="app-version">v1.0.13</span></h1>
+    <h1>QrSource<span class="app-version">v1.0.14</span></h1>
     <p class="subtitle">CSV-Datei als verschlüsselte QR-Sequenz übertragen</p>
   </header>
 
@@ -44,21 +44,20 @@
         <input id="interval-slider" type="range" min="100" max="1000" step="100" value="500">
       </label>
 
-      <div class="status-block">
-        <p id="status-text">Keine Datei geladen</p>
-        <div class="progress-track">
-          <div id="progress-bar" class="progress-bar"></div>
-        </div>
-      </div>
-
       <div id="error-box" class="error-box" hidden></div>
     </section>
 
     <section class="panel qr-panel">
       <canvas id="qr-canvas" width="640" height="640" aria-label="Aktueller QR-Code"></canvas>
+      <div class="qr-status">
+        <p id="status-text">Keine Datei geladen</p>
+        <div class="progress-track">
+          <div id="progress-bar" class="progress-bar"></div>
+        </div>
+      </div>
     </section>
   </main>
 
-  <script type="module" src="app.js?v=1.0.13"></script>
+  <script type="module" src="app.js?v=1.0.14"></script>
 </body>
 </html>
