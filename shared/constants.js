@@ -1,5 +1,5 @@
 export const PROTOCOL_VERSION = 2;
-export const APP_VERSION = '1.0.16';
+export const APP_VERSION = '1.0.17';
 export const CHUNK_SIZE = 200;
 export const FILE_ID_LENGTH = 16;
 export const SALT_LENGTH = 16;
